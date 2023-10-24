@@ -1,7 +1,7 @@
 import numpy as np
 import copy
-import pickle
-def initialize_parameters_deep(units_in_layer):
+
+def initialize_parameters(units_in_layer):
     """
     Applies He initialization
 
@@ -116,7 +116,7 @@ def linear_activation_forward(A_prev, W, b, activation):
     return A, cache
 
 
-def L_model_forward(X, parameters):
+def Model_forward(X, parameters):
     """
     Implement forward propagation for the all layers
 
@@ -166,6 +166,7 @@ def compute_cost(AL, Y):
     cost = -1 / m * np.sum(Y * np.log(AL + epsilon))
 
     cost = np.squeeze(cost)
+    print("cost at current iteration is:", cost)
 
     return cost
 
@@ -179,9 +180,9 @@ def linear_backward(dZ, cache):
     cache -- tuple holding values (A_prev, W, b) derived from the forward propagation of the current layer.
 
     Outputs:
-    dA_prev -- Derivative of the cost with respect to the activation (from the preceding layer l-1), identical shape as A_prev.
-    dW -- Derivative of the cost concerning W (of the current layer l), identical shape as W.
-    db -- Derivative of the cost concerning b (of the current layer l), identical shape as b.
+    dA_prev -- Derivative of the cost with respect to the activation (from the preceding layer l-1).
+    dW -- Derivative of the cost concerning W (of the current layer l).
+    db -- Derivative of the cost concerning b (of the current layer l).
     """
     A_prev, W, b = cache
     m = A_prev.shape[1]
@@ -234,7 +235,7 @@ def linear_activation_backward(dA, cache, activation, Y=None):
 
    return dA_prev, dW, db
 
-def L_model_backward(AL, Y, caches):
+def Model_backward(AL, Y, caches):
     """
     Implement the backward propagation for the [LINEAR->RELU] * (L-1) -> LINEAR -> SIGMOID group
 

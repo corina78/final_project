@@ -1,6 +1,6 @@
 from loader import MnistDataloader
 import numpy as np
-import scipy.io as sio
+
 def prepare_data(x_train, y_train, x_test, y_test):
     """
     Reads the images and labels from the given file paths.

@@ -1,15 +1,12 @@
-#
 import numpy as np
-import random
 from os.path import join
+
 from loader import MnistDataloader
 from preprocessing import prepare_data, one_hot_encode
-from helper_functions import initialize_parameters_deep, relu, softmax, linear_forward, \
-            linear_activation_forward, L_model_forward,compute_cost, linear_backward, \
-            linear_activation_backward, L_model_backward, update_parameters
-import pickle
+from helper_functions import *
 
-def L_layer_model(X, Y, layers_dims, learning_rate=0.0075, num_iterations=3000, print_cost=False):
+
+def Model(X, Y, layers_dims, learning_rate=0.01, num_iterations=1):
     """
     Parameters:
     X -- input dataset, shaped (num_features, num_examples)
@@ -27,30 +24,37 @@ def L_layer_model(X, Y, layers_dims, learning_rate=0.0075, num_iterations=3000, 
     costs = []  # keep track of cost
 
     # Parameters initialization.
-    parameters = initialize_parameters_deep(units_in_layer)
+    print("Initializing parameters...")
+    parameters = initialize_parameters(units_in_layer)
+    print("Parameters initialized!")
 
     # Loop (gradient descent)
     for i in range(0, num_iterations):
+        print("\n=== Iteration {} ===".format(i))
 
         # Forward propagation: [LINEAR -> RELU]*(L-1) -> LINEAR -> SOFTMAX.
-        AL, caches = L_model_forward(X, parameters)
+        print("Starting forward propagation...")
+        AL, caches = Model_forward(X, parameters)
+        print("Forward propagation done!")
 
         # Compute cost.
         cost = compute_cost(AL, Y)
+        print("Cost computed!")
 
         # Backward propagation.
-        grads = L_model_backward(AL, Y, caches)
+        print("Starting backward propagation...")
+        grads = Model_backward(AL, Y, caches)
+        print("Backward propagation done!")
 
         # Update parameters.
+        print("Updating parameters...")
         parameters = update_parameters(parameters, grads, learning_rate)
+        print("Parameters updated!")
 
-        # Print the cost every 100 iterations
-        if print_cost and i % 100 == 0 or i == num_iterations - 1:
-            print("Cost after iteration {}: {}".format(i, np.squeeze(cost)))
-        if i % 100 == 0 or i == num_iterations:
-            costs.append(cost)
+        costs.append(cost)
 
     return parameters, costs
+
 
 def predict(X, parameters):
     """
@@ -64,8 +68,8 @@ def predict(X, parameters):
     predictions -- vector of predicted labels for the examples in X
     """
 
-    # Given that you've defined a function L_model_forward for forward propagation:
-    AL, caches = L_model_forward(X, parameters)
+    # Given that you've defined a function Model_forward for forward propagation:
+    AL, caches = Model_forward(X, parameters)
 
     # Convert probabilities AL into a prediction by taking the class with the highest probability
     predictions = np.argmax(AL, axis=0)
@@ -105,30 +109,16 @@ if __name__=="__main__":
     # Preprocess datasets
     x_train_flattened, x_test_flattened, y_train_flattened, y_test_flattened = prepare_data(x_train, y_train, x_test,
                                                                                             y_test)
-    with open('groundT_train.pkl', 'wb') as f:
-        pickle.dump(y_train_flattened, f)
-
-    with open('groundT_test.pkl', 'wb') as f:
-        pickle.dump(y_test_flattened, f)
-
     # One hot encode Y ground true values
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
 
+    # Define the number of units in each layer of the network
     units_in_layer = [784, 256, 128, 10]
 
-    parameters, costs = L_layer_model(x_train_flattened, one_hot_encoded_y_train.T, units_in_layer,learning_rate=0.01, num_iterations=500,print_cost=False)
+    parameters, costs = Model(x_train_flattened, one_hot_encoded_y_train.T, units_in_layer,learning_rate=0.01, num_iterations=500)
 
     predictions_train = predict(x_train_flattened, parameters)
     predictions_test = predict(x_test_flattened, parameters)
-
-    import pickle
-
-    # To save the object
-    with open('predictions_train.pkl', 'wb') as f:
-        pickle.dump(predictions_train, f)
-
-    with open('predictions_test.pkl', 'wb') as f:
-        pickle.dump(predictions_test, f)
 
     accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
     accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
