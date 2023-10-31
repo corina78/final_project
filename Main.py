@@ -1,6 +1,6 @@
 import numpy as np
 from os.path import join
-
+import pickle
 from loader import MnistDataloader
 from preprocessing import prepare_data, one_hot_encode
 from helper_functions import *
@@ -68,7 +68,7 @@ def predict(X, parameters):
     predictions -- vector of predicted labels for the examples in X
     """
 
-    # Given that you've defined a function Model_forward for forward propagation:
+    # Forward propagation
     AL, caches = Model_forward(X, parameters)
 
     # Convert probabilities AL into a prediction by taking the class with the highest probability
@@ -115,7 +115,7 @@ if __name__=="__main__":
     # Define the number of units in each layer of the network
     units_in_layer = [784, 256, 128, 10]
 
-    parameters, costs = Model(x_train_flattened, one_hot_encoded_y_train.T, units_in_layer,learning_rate=0.01, num_iterations=500)
+    parameters, costs = Model(x_train_flattened, one_hot_encoded_y_train.T, units_in_layer,learning_rate=0.01, num_iterations=50)
 
     predictions_train = predict(x_train_flattened, parameters)
     predictions_test = predict(x_test_flattened, parameters)

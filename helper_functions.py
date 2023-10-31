@@ -109,10 +109,6 @@ def linear_activation_forward(A_prev, W, b, activation):
 
     cache = (linear_cache, activation_cache)
 
-    # To save the object
-    with open('cache_linear_act_forward.pkl', 'wb') as f:
-        pickle.dump(cache, f)
-
     return A, cache
 
 
@@ -136,8 +132,7 @@ def Model_forward(X, parameters):
     for l in range(1, L):
         A_prev = A
 
-        A, cache = linear_activation_forward(A_prev, parameters["W" + str(l)], parameters['b' + str(l)],
-                                             activation="relu")
+        A, cache = linear_activation_forward(A_prev, parameters["W" + str(l)], parameters['b' + str(l)],activation="relu")
         caches.append(cache)
 
 
