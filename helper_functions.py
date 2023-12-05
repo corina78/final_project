@@ -3,30 +3,37 @@ import copy
 
 def initialize_parameters(units_in_layer):
     """
-    Applies He initialization
+    Initializes network parameters using He initialization, and prepares for Davidson's algorithm
 
     Args:
     units_in_layer -- python list containing the dimensions of each layer in the network
 
     Returns:
-    parameters --
-    Wl -- weight matrix of shape (units_in_layer[l], units_in_layer[l-1])
-    bl -- bias vector of shape (units_in_layer[l], 1)
+    parameters -- dictionary containing:
+                  Wl, bl -- weight matrix and bias vector for layer l
+                  J -- Initial Jacobian or Hessian approximation
     """
 
     np.random.seed(45)
     parameters = {}
     L = len(units_in_layer)  # number of layers in the network
 
-    for l in range(1, L):
+    total_params = 0  # To calculate the total number of parameters
 
+    for l in range(1, L):
         parameters['W' + str(l)] = np.random.randn(units_in_layer[l], units_in_layer[l - 1]) * np.sqrt(2. / units_in_layer[l - 1])
         parameters['b' + str(l)] = np.zeros((units_in_layer[l], 1))
 
-        # Save the weights and biases to files
-    for l in range(1, L):
-        np.savetxt(f"W{l}.txt", parameters['W' + str(l)])
-        np.savetxt(f"b{l}.txt", parameters['b' + str(l)])
+        print("W" + str(l) + " shape: " + str(parameters['W' + str(l)].shape))
+        print("b" + str(l) + " shape: " + str(parameters['b' + str(l)].shape))
+
+        total_params += units_in_layer[l] * units_in_layer[l - 1] + units_in_layer[l]
+
+    # Initialize the Jacobian/Hessian approximation
+    # For simplicity, starting with an identity matrix
+    parameters['J'] = np.identity(total_params)
+
+    print("J shape: " + str(parameters['J'].shape))
 
     return parameters
 
@@ -259,6 +266,10 @@ def Model_backward(AL, Y, caches):
     grads["dW" + str(L)] = dW_temp
     grads["db" + str(L)] = db_temp
 
+    print("dA" + str(L - 1) + " shape: " + str(grads["dA" + str(L - 1)].shape))
+    print("dW" + str(L) + " shape: " + str(grads["dW" + str(L)].shape))
+    print("db" + str(L) + " shape: " + str(grads["db" + str(L)].shape))
+
 
     # Loop from l=L-2 to l=0
     for l in reversed(range(L - 1)):
@@ -270,6 +281,10 @@ def Model_backward(AL, Y, caches):
         grads["dA" + str(l)] = dA_prev_temp
         grads["dW" + str(l + 1)] = dW_temp
         grads["db" + str(l + 1)] = db_temp
+
+        print("dA" + str(l) + " shape: " + str(grads["dA" + str(l)].shape))
+        print("dW" + str(l + 1) + " shape: " + str(grads["dW" + str(l + 1)].shape))
+        print("db" + str(l + 1) + " shape: " + str(grads["db" + str(l + 1)].shape))
 
     return grads
 
@@ -293,3 +308,114 @@ def update_parameters(params, grads, learning_rate):
         parameters["b" + str(l + 1)] = parameters["b" + str(l + 1)] - learning_rate * grads["db" + str(l + 1)]
 
     return parameters
+
+def flatten_gradients_for_jacobian(grads, units_in_layer):
+    """
+    Flatten and concatenate gradients in the specified order for Jacobian multiplication,
+    and create a cache for the structure of gradients.
+
+    Args:
+    grads -- Dictionary containing gradient arrays for 'dW' and 'db' for each layer
+    units_in_layer -- Number of units in each layer (including input layer)
+
+    Returns:
+    flattened_gradient -- Flattened and concatenated gradient vector
+    structure_cache -- Cache containing the shapes of each gradient array
+    """
+    L = len(units_in_layer)  # number of layers in the network
+    flattened_gradient = []
+    structure_cache = []
+
+    # Iterate over layers to concatenate gradients in the specified order
+    for l in range(1, L):
+        dw_key = 'dW' + str(l)
+        db_key = 'db' + str(l)
+
+        # Check if the keys exist in the dictionary and append the gradients
+        if dw_key in grads and db_key in grads:
+            # Append shape information to the cache
+            structure_cache.append((dw_key, grads[dw_key].shape))
+            structure_cache.append((db_key, grads[db_key].shape))
+
+            # Flatten and append the gradients
+            flattened_gradient.append(grads[dw_key].flatten())
+            flattened_gradient.append(grads[db_key].flatten())
+        else:
+            raise ValueError(f"Gradient for layer {l} not found in the dictionary")
+
+    # Concatenate all flattened gradients into a single vector
+    return np.concatenate(flattened_gradient), structure_cache
+
+import numpy as np
+
+import numpy as np
+
+def update_parameters_with_jacobian(params, structure_cache, s):
+    """
+    Update parameters using a modification of gradient descent that incorporates
+    a Jacobian matrix.
+
+    Arguments:
+    params -- python dictionary containing learned parameters
+    structure_cache -- list containing the structure (shape and key) of each gradient
+    s -- search direction (flattened vector)
+    J -- numpy array representing the Jacobian matrix, it is within the parameters dictionary
+
+    Returns:
+    params -- python dictionary containing updated parameters
+    """
+
+    # Calculate the update direction using the Jacobian
+    J = params["J"]
+    update_direction = np.dot(J, s)
+
+    # Initialize the starting index for slicing update_direction
+    start = 0
+
+    # Iterate over the structure_cache to update each parameter
+    for grad_key, shape in structure_cache:
+        # Convert gradient key to parameter key (e.g., 'dW1' to 'W1')
+        param_key = grad_key[1:]  # Remove the 'd' from the gradient key
+
+        # Ensure the key exists in the params dictionary
+        if param_key not in params:
+            raise KeyError(f"Parameter {param_key} not found in params dictionary.")
+
+        # Calculate the size of the current parameter
+        size = np.prod(shape)
+
+        # Slice the corresponding segment from update_direction
+        segment = update_direction[start:start + size]
+
+        # Reshape and update the parameter in the dictionary
+        params[param_key] += segment.reshape(shape)
+
+        # Update the start index for the next parameter
+        start += size
+
+    return params
+
+def calculate_updates(v, mu, m, n, gamma, delta):
+    alpha = v + mu * delta + m**2 * n**2 * gamma
+    p = (delta - n**2 * gamma) * m + gamma * v * n
+    q = m / (1 + n**2 * gamma) - (mu * v * n) / alpha
+    omega = n**2 * (1 + gamma) * m - (1 + delta) * (mu * v * n) / alpha
+    return alpha, p, q, omega
+
+def compute(m,omega):# Calculate the scalar m^T * m
+
+    # compute m_square
+    mT_m = np.dot(m.T, m)
+
+    # Calculate the matrix m * m^T
+    m_mT = np.outer(m, m)
+
+    # Perform the matrix-vector multiplication (m * m^T) * omega
+    m_mT_omega = np.dot(m_mT, omega)
+
+    # Calculate u by subtracting the scaled vector from omega
+    u = omega - (m_mT_omega / mT_m)
+    return u
+
+
+
