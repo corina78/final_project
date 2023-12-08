@@ -395,7 +395,7 @@ def update_parameters_with_jacobian(params, structure_cache, s):
 
     return params
 
-def calculate_updates(v, mu, m, n, gamma, delta):
+def calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta):
     alpha = v + mu * delta + m**2 * n**2 * gamma
     p = (delta - n**2 * gamma) * m + gamma * v * n
     q = m / (1 + n**2 * gamma) - (mu * v * n) / alpha
@@ -417,5 +417,9 @@ def compute(m,omega):# Calculate the scalar m^T * m
     u = omega - (m_mT_omega / mT_m)
     return u
 
-
-
+def calculate_gamma(mu, v, m_square, n_squared, a, b):
+    if mu*v < m_square * n_squared and a != 0 anb b != 0:
+        gamma = np.sqrt(1 - (mu * v) / (m_square * n_squared/ (a*b)))
+    else:
+        gamma = 0
+    return gamma

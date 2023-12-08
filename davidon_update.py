@@ -25,15 +25,16 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         lambda_factor = 2
 
         # Iterative update of s until the condition 4 * E0 > - E_prime0 is true
-        if 4 * E0 < - E_prime0:
+        while 4 * E0 < - E_prime0:
             s = -4 * s * E0 / E_prime0
 
-        # Update x using the current Jacobian and search direction
+        # Update parameters using the current Jacobian and search direction
         parameters = update_parameters_with_jacobian(parameters,structure_cache, s)
 
         # Break the loop if the update is smaller than epsilon to prevent infinite loops
         if -E_prime0 < epsilon:
-            break  # Stopping condition met, break the loop
+            print("Stopping criteria met, exiting the algorithm")
+            return
 
         # Calculate a new forward pass and then the cost
         AL, caches = Model_forward(x_train_flattened, parameters)
@@ -46,11 +47,15 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
             E_prime0 = E_prime0/2
             lambda_factor = 1/2
             parameters = update_parameters_with_jacobian(parameters, structure_cache,s)
+            if -E_prime0 < epsilon:
+                print("Stopping criteria met, exiting the algorithm")
+                return
             AL, caches = Model_forward(x_train_flattened, parameters)
             E = compute_cost(AL, one_hot_encoded_y_train.T)
 
         while True:
             # compute k and E_prime
+            E = compute_cost(AL, one_hot_encoded_y_train.T)
             k = np.dot(J.T, s)
             E_prime = np.dot(k.T, s)
 
@@ -61,9 +66,10 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
 
             if b0 >= epsilon:
                 m_square = np.dot(m.T, m)
-                # Check if the norm of u is sufficiently small
+                # Check if the norm of m is sufficiently small
                 if (np.linalg.norm(m) ** 2 < epsilon):
-                    break # convergence criteria met, break the loop
+                    print("Convergence criteria met, exit")
+                    return
                 else:
                     v = np.dot(m.T, s)
                     mu = v - m_square
@@ -71,9 +77,9 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                     # compute u
                     u = omega - compute(m,omega)
 
-                    # Check if m'u is sufficiently small compared to mu'u
-                    if 1e6 * (np.dot(m.T, u) ** 2 >= mu ** 2 * np.dot(u.T, u)):
-                        n = np.zeros_like(s)
+                    # Check if m'u is sufficiently small compared to u'u
+                    if 1e6 * (np.dot(m.T, u) ** 2 >= m_square * np.dot(u.T, u)):
+                        n = np.zeros_like(s) # assuming size of s
                         n_squared = 0
                     else:
                         n = compute(u,s)
@@ -82,54 +88,34 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                     b = n_squared - ((mu*v)/m_square)
 
                     # Check if b is sufficiently large
-                    while True:
-                        if b <= epsilon:
+                    alpha = p = omega = delta = None
+                     if b <= epsilon
+                         if mu*v < m_square * n_squared:
+                             a = b - mu
+                             c = b + v
+                             gamma = calculate_gamma(mu, v, m_square, n_squared, a, b)
+                             d = c/a if a!=0 else None
 
-                            if mu*v < m_square * n_squared:
-                                a = b - mu
-                                c = b + v
-                                gamma = np.sqrt(1 - (mu * v) / (m_square * np.dot(mu, mu))*n_squared/ a*b)
-                                d = c/a
+                             if c < a:
+                                 gamma = -gamma
+                                 alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
+                             else:
+                                 alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
+                         else:
+                            gamma = calculate_gamma(mu, v, m_square, n_squared, a, b) # gamma should be 0
+                            delta = np.sqrt(v/mu)
+                            alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
+                     else:
+                          n = s - (v*m)/m_square
 
-                                if c >= a:
-                                # Update alpha, p, q, omega
-                                    m_square = np.dot(m, m)
 
-                                    alpha, p, q, omega = calculate_updates(v, mu, m, n, gamma, delta)
 
-                                else: # c < a
-                                    gamma = -gamma
-                                    alpha, p, q, omega = calculate_updates(v, mu, m, n, gamma, delta)
 
-                            else:
-                                gamma = 0
-                                delta = np.sqrt(v/mu)
-                                alpha, p, q, omega = calculate_updates(v, mu, m, n, gamma, delta)
-                        else:
-                            n = s - (v / mu) * m
-                            n_squared = b0 - (mu * v / m ** 2)
-                            b = b0
-                            continue # go back to the beginning of the loop
 
-                        # Update k0 and J
-                        k0 = k0 + p * np.dot(q.T, k0)
-                        J = J + np.dot(p, q.T)
-                        # update parameters with the new value of J
-                        parameters["J"] = J
 
-                        # Update current cost values for next iteration
-                        E0 = E
 
-                        if n_squared > a:
-                            omega = k0  # go back to the beginning of the algorithm
 
-        else:
-            s = lambda_factor * s
-            E_prime0 = lambda_factor * E_prime0
-            continue # go back to the beginning of the loop
 
-        if convergence_criteria_met:
-            break # break the while loop
 
 
 if __name__ == '__main__':
