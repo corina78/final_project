@@ -176,7 +176,7 @@ if __name__ == '__main__':
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
 
     # Define the number of units in each layer of the network
-    units_in_layer = [784, 5, 5, 10]
+    units_in_layer = [784, 256, 128, 10]
 
     # Initialize the parameters
     parameters = initialize_parameters(units_in_layer)
