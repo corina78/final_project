@@ -418,8 +418,44 @@ def compute(m,omega):# Calculate the scalar m^T * m
     return u
 
 def calculate_gamma(mu, v, m_square, n_squared, a, b):
-    if mu*v < m_square * n_squared and a != 0 anb b != 0:
+    if mu * v < m_square * n_squared and a != 0 and b != 0:
         gamma = np.sqrt(1 - (mu * v) / (m_square * n_squared/ (a*b)))
-    else:
-        gamma = 0
     return gamma
+
+def predict(X, parameters):
+    """
+    Given input features and parameters, it predicts the class labels
+
+    Arguments:
+    X -- input features, numpy array of shape (number of features, number of examples)
+    parameters -- python dictionary containing the updated parameters of the model
+
+    Returns:
+    predictions -- vector of predicted labels for the examples in X
+    """
+
+    # Forward propagation
+    AL, caches = Model_forward(X, parameters)
+
+    # Convert probabilities AL into a prediction by taking the class with the highest probability
+    predictions = np.argmax(AL, axis=0)
+
+    return predictions
+
+
+def compute_accuracy(predictions, Y):
+    """
+    Computes the accuracy of the predictions against the true labels
+
+    Arguments:
+    predictions -- predicted labels, a numpy array of shape (1, number of examples)
+    Y -- true "label" vector (containing labels from 0 to 9), of shape (1, number of examples)
+
+    Returns:
+    accuracy -- accuracy of the predictions
+    """
+    accuracy = np.mean(predictions == Y)
+    return accuracy
+
+
+

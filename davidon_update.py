@@ -6,7 +6,7 @@ from preprocessing import prepare_data, one_hot_encode
 from helper_functions import *
 
 
-def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001):
+def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001, max_iterations=300):
 
     # Initialize variables only once
     J = parameters['J'] # initial parameters
@@ -19,7 +19,16 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
     k0 = k0.reshape(4015,1)
     omega = k0
 
+    iteration_counter = 0
+
     while True:
+
+        iteration_counter += 1
+
+        if iteration_counter >= max_iterations:
+            print("Maximum number of iterations reached, exiting the algorithm")
+            return
+
         s = -k0
         E_prime0 = np.dot(k0.T,s)
         lambda_factor = 2
@@ -89,34 +98,63 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
 
                     # Check if b is sufficiently large
                     alpha = p = omega = delta = None
-                     if b <= epsilon
-                         if mu*v < m_square * n_squared:
-                             a = b - mu
-                             c = b + v
-                             gamma = calculate_gamma(mu, v, m_square, n_squared, a, b)
-                             d = c/a if a!=0 else None
+                    if b <= epsilon:
+                        if mu*v < m_square * n_squared:
+                            a = b - mu
+                            c = b + v
+                            gamma = calculate_gamma(mu, v, m_square, n_squared, a, b)
+                            d = c/a if a!=0 else None
 
-                             if c < a:
-                                 gamma = -gamma
-                                 alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
-                             else:
-                                 alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
-                         else:
-                            gamma = calculate_gamma(mu, v, m_square, n_squared, a, b) # gamma should be 0
+                            if c < a:
+                                gamma = -gamma
+                                alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
+                            else:
+                                alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
+                        else:
+                            gamma = 0
                             delta = np.sqrt(v/mu)
                             alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
-                     else:
-                          n = s - (v*m)/m_square
+                    else:
+                        n = s - (v * m)/m_square
+                        n_squared = b0 - (mu*v)/m_square
+                        b = b0
+                        if mu*v < m_square * n_squared:
+                            a = b - mu
+                            c = b + v
+                            gamma = calculate_gamma(mu, v, m_square, n_squared, a, b)
+                            d = c/a if a!=0 else None
 
+                            if c < a:
+                                gamma = -gamma
+                                alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
+                            else:
+                                alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
+                        else:
+                            gamma = 0
+                            delta = np.sqrt(v/mu)
+                            alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
 
+                    # Update parameters
+                    qTk0 = np.dot(q.T, k0)
+                    k0 = k0 + p * qTk0
+                    qpT = np.dot(q, p.T)
+                    J = J +  J * qpT
+                    # save cost and parameters for next iteration
+                    J = parameters['J']
+                    E0 = E
+                    #print("cost: ", E0)
 
+                    if n_squared > 0:
+                        break
+                    else:
+                        omega = k0
+                        break
+            else:
+                S = lambda_factor * s
+                E_prime0 = lambda_factor* E_prime0
+                continue
 
-
-
-
-
-
-
+    return parameters
 
 if __name__ == '__main__':
 
@@ -152,4 +190,15 @@ if __name__ == '__main__':
     # Compute the gradients
     grads = Model_backward(AL, one_hot_encoded_y_train.T, caches)
 
-    davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0.001)
+    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=300)
+
+    # Get predictions for the training and test sets
+    predictions_train = predict(x_train_flattened, parameters)
+    predictions_test = predict(x_test_flattened, parameters)
+
+    # Compute the accuracy of the predictions
+    accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
+    accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
+
+    print(f"Accuracy on the training set: {accuracy_train}")
+    print(f"Accuracy on the test set: {accuracy_test}")
