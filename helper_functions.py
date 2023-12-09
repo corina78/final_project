@@ -343,8 +343,10 @@ def flatten_gradients_for_jacobian(grads, units_in_layer):
         else:
             raise ValueError(f"Gradient for layer {l} not found in the dictionary")
 
+    size = np.concatenate(flattened_gradient).shape[0]
+
     # Concatenate all flattened gradients into a single vector
-    return np.concatenate(flattened_gradient), structure_cache
+    return np.concatenate(flattened_gradient), structure_cache, size
 
 import numpy as np
 

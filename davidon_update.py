@@ -11,12 +11,12 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
     # Initialize variables only once
     J = parameters['J'] # initial parameters
     E0 = cost # initial cost before the first forward pass, just the cost related to the initial parameters
-    grad_vector, structure_cache = flatten_gradients_for_jacobian(grads, units_in_layer) # grads after first backward pass
+    grad_vector, structure_cache, size = flatten_gradients_for_jacobian(grads, units_in_layer) # grads after first backward pass
     # Check if sizes are compatible for matrix multiplication
-    if grad_vector.shape[0] != 4015:
+    if grad_vector.shape[0] != size:
         raise ValueError(f"The gradient vector is expected to be of size 4015, but got size {grad_vector.shape[0]}")
     k0 = np.dot(J,grad_vector) # perform matrix multiplication to get k0, grad_vector after first backward pass
-    k0 = k0.reshape(4015,1)
+    k0 = k0.reshape(grad_vector.shape[0],1)
     omega = k0
 
     iteration_counter = 0
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
 
     # Define the number of units in each layer of the network
-    units_in_layer = [784, 256, 128, 10]
+    units_in_layer = [784, 5, 5, 10]
 
     # Initialize the parameters
     parameters = initialize_parameters(units_in_layer)
