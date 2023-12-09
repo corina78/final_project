@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from scipy.sparse import identity
 
 def initialize_parameters(units_in_layer, dtype=np.float16):
     """
@@ -31,7 +32,7 @@ def initialize_parameters(units_in_layer, dtype=np.float16):
 
     # Initialize the Jacobian/Hessian approximation
     # For simplicity, starting with an identity matrix
-    parameters['J'] = np.identity(total_params, dtype=dtype)
+    parameters['J'] = identity(total_params, format="crs", dtype=dtype)
 
     print("J shape: " + str(parameters['J'].shape))
 
