@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 
-def initialize_parameters(units_in_layer):
+def initialize_parameters(units_in_layer, dtype=np.float16):
     """
     Initializes network parameters using He initialization, and prepares for Davidson's algorithm
 
@@ -21,8 +21,8 @@ def initialize_parameters(units_in_layer):
     total_params = 0  # To calculate the total number of parameters
 
     for l in range(1, L):
-        parameters['W' + str(l)] = np.random.randn(units_in_layer[l], units_in_layer[l - 1]) * np.sqrt(2. / units_in_layer[l - 1])
-        parameters['b' + str(l)] = np.zeros((units_in_layer[l], 1))
+        parameters['W' + str(l)] = np.random.randn(units_in_layer[l], units_in_layer[l - 1]) * np.sqrt(2. / units_in_layer[l - 1]).astype(dtype)
+        parameters['b' + str(l)] = np.zeros((units_in_layer[l], 1), dtype=dtype)
 
         print("W" + str(l) + " shape: " + str(parameters['W' + str(l)].shape))
         print("b" + str(l) + " shape: " + str(parameters['b' + str(l)].shape))
@@ -31,7 +31,7 @@ def initialize_parameters(units_in_layer):
 
     # Initialize the Jacobian/Hessian approximation
     # For simplicity, starting with an identity matrix
-    parameters['J'] = np.identity(total_params)
+    parameters['J'] = np.identity(total_params, dtype=dtype)
 
     print("J shape: " + str(parameters['J'].shape))
 
