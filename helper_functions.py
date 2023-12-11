@@ -1,7 +1,8 @@
 import numpy as np
 import copy
+from memory_profiler import profile
 #from scipy.sparse import identity
-
+@profile
 def initialize_parameters(units_in_layer, dtype=np.float16):
     """
     Initializes network parameters using He initialization, and prepares for Davidson's algorithm

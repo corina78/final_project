@@ -4,9 +4,10 @@ import pickle
 from loader import MnistDataloader
 from preprocessing import prepare_data, one_hot_encode
 from helper_functions import *
+from memory_profiler import profile
 
-
-def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001, max_iterations=300):
+@profile
+def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001, max_iterations=10):
 
     # Initialize variables only once
     J = parameters['J'] # initial parameters
@@ -190,15 +191,15 @@ if __name__ == '__main__':
     # Compute the gradients
     grads = Model_backward(AL, one_hot_encoded_y_train.T, caches)
 
-    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=300)
+    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=5)
 
     # Get predictions for the training and test sets
-    predictions_train = predict(x_train_flattened, parameters)
-    predictions_test = predict(x_test_flattened, parameters)
+    #predictions_train = predict(x_train_flattened, parameters)
+    #predictions_test = predict(x_test_flattened, parameters)
 
     # Compute the accuracy of the predictions
-    accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
-    accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
+    #accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
+    #accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
 
-    print(f"Accuracy on the training set: {accuracy_train}")
-    print(f"Accuracy on the test set: {accuracy_test}")
+    #print(f"Accuracy on the training set: {accuracy_train}")
+    #print(f"Accuracy on the test set: {accuracy_test}")
