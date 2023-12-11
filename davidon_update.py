@@ -172,7 +172,14 @@ if __name__ == '__main__':
 
     # Preprocess datasets
     x_train_flattened, x_test_flattened, y_train_flattened, y_test_flattened = prepare_data(x_train, y_train, x_test,
-                                                                                            y_test)
+                                                                                           y_test)
+
+    # take a sample:
+    x_train_flattened = x_train_flattened[:, :64]
+    y_train_flattened = y_train_flattened[:, :64]
+    x_test_flattened = x_test_flattened[:, :64]
+    y_test_flattened = y_test_flattened[:, :64]
+
     # One hot encode Y ground true values
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
 
