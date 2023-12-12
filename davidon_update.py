@@ -42,6 +42,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         # Iterative update of s until the condition 4 * E0 > - E_prime0 is true
         while 4 * E0 < - E_prime0:
             s = -4 * s * E0 / E_prime0
+            print("while loop 1")
 
         # Update parameters using the current Jacobian and search direction
         parameters = update_parameters_with_jacobian(parameters,structure_cache, s)
@@ -58,6 +59,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
 
         # Check if the update is sufficient, otherwise adjust
         while E > E0:
+            print("while loop 2")
             s = s/2
             E_prime0 = E_prime0/2
             lambda_factor = 1/2
@@ -69,6 +71,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
             E = compute_cost(AL, one_hot_encoded_y_train.T)
 
         while True:
+            print("while loop 3")
             # compute k and E_prime
             E = compute_cost(AL, one_hot_encoded_y_train.T)
             k = np.dot(J.T, s)
@@ -80,6 +83,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
             E_prime0 = E_prime
 
             if b0 >= epsilon:
+                print("if statement 1")
                 m_square = np.dot(m.T, m)
                 # Check if the norm of m is sufficiently small
                 if (np.linalg.norm(m) ** 2 < epsilon):
@@ -156,6 +160,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                         omega = k0
                         break
             else:
+                print("else statement 1"
                 S = lambda_factor * s
                 E_prime0 = lambda_factor* E_prime0
                 continue
