@@ -2,6 +2,7 @@ import numpy as np
 import copy
 from memory_profiler import profile
 #from scipy.sparse import identity
+import time
 @profile
 def initialize_parameters(units_in_layer, dtype=np.float16):
     """
@@ -21,20 +22,25 @@ def initialize_parameters(units_in_layer, dtype=np.float16):
     L = len(units_in_layer)  # number of layers in the network
 
     total_params = 0  # To calculate the total number of parameters
-
+    start = time.time()
     for l in range(1, L):
         parameters['W' + str(l)] = np.random.randn(units_in_layer[l], units_in_layer[l - 1]) * np.sqrt(2. / units_in_layer[l - 1]).astype(dtype)
         parameters['b' + str(l)] = np.zeros((units_in_layer[l], 1), dtype=dtype)
 
         print("W" + str(l) + " shape: " + str(parameters['W' + str(l)].shape))
         print("b" + str(l) + " shape: " + str(parameters['b' + str(l)].shape))
-
         total_params += units_in_layer[l] * units_in_layer[l - 1] + units_in_layer[l]
+    end = time.time()
+    elapsed = end - start
+    print("Elapsed time for initialization of w and b: ", elapsed)
 
+    start = time.time()
     # Initialize the Jacobian/Hessian approximation
     # For simplicity, starting with an identity matrix
     parameters['J'] = np.identity(total_params, dtype=dtype)
-
+    end = time.time()
+    elapsed = end - start
+    print("Elapsed time for initialization of J: ", elapsed)
     print("J shape: " + str(parameters['J'].shape))
 
     return parameters
@@ -371,12 +377,16 @@ def update_parameters_with_jacobian(params, structure_cache, s):
 
     # Calculate the update direction using the Jacobian
     J = params["J"]
+    start_time = time.time()
     update_direction = np.dot(J, s)
-
+    end = time.time()
+    elapsed= end - start_time
+    print("elapsed time for update direction in update parameters: ", elapsed)
     # Initialize the starting index for slicing update_direction
     start = 0
 
     # Iterate over the structure_cache to update each parameter
+    start_time = time.time()
     for grad_key, shape in structure_cache:
         # Convert gradient key to parameter key (e.g., 'dW1' to 'W1')
         param_key = grad_key[1:]  # Remove the 'd' from the gradient key
@@ -396,7 +406,9 @@ def update_parameters_with_jacobian(params, structure_cache, s):
 
         # Update the start index for the next parameter
         start += size
-
+    end = time.time()
+    elapsed = end - start_time
+    print("elapsed time for updating parameters: ", elapsed)
     return params
 
 def calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta):

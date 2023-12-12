@@ -5,6 +5,7 @@ from loader import MnistDataloader
 from preprocessing import prepare_data, one_hot_encode
 from helper_functions import *
 from memory_profiler import profile
+import time
 
 @profile
 def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001, max_iterations=10):
@@ -16,7 +17,11 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
     # Check if sizes are compatible for matrix multiplication
     if grad_vector.shape[0] != size:
         raise ValueError(f"The gradient vector is expected to be of size 4015, but got size {grad_vector.shape[0]}")
+    start = time.time()
     k0 = np.dot(J,grad_vector) # perform matrix multiplication to get k0, grad_vector after first backward pass
+    end = time.time()
+    elapsed = end - start
+    print("elapsed time for matrix multiplication: ", elapsed)
     k0 = k0.reshape(grad_vector.shape[0],1)
     omega = k0
 
