@@ -40,9 +40,9 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         lambda_factor = 2
 
         # Iterative update of s until the condition 4 * E0 > - E_prime0 is true
-        while 4 * E0 < - E_prime0:
+        if 4 * E0 < - E_prime0:
             s = -4 * s * E0 / E_prime0
-            print("while loop 1")
+            print("first if condition")
 
         # Update parameters using the current Jacobian and search direction
         parameters = update_parameters_with_jacobian(parameters,structure_cache, s)
@@ -160,7 +160,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                         omega = k0
                         break
             else:
-                print("else statement 1"
+                print("else statement 1")
                 S = lambda_factor * s
                 E_prime0 = lambda_factor* E_prime0
                 continue
