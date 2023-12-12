@@ -8,10 +8,11 @@ from memory_profiler import profile
 import time
 
 @profile
-def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001, max_iterations=10):
+def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.1, max_iterations=10):
 
     # Initialize variables only once
-    J = parameters['J'] # initial parameters
+    parameters0 = parameters
+    J = parameters0['J'] # initial parameters
     E0 = cost # initial cost before the first forward pass, just the cost related to the initial parameters
     grad_vector, structure_cache, size = flatten_gradients_for_jacobian(grads, units_in_layer) # grads after first backward pass
     # Check if sizes are compatible for matrix multiplication
@@ -41,11 +42,11 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
 
         # Iterative update of s until the condition 4 * E0 > - E_prime0 is true
         if 4 * E0 < - E_prime0:
-            s = -4 * s * E0 / E_prime0
+            s = -4 * s * (E0 / E_prime0)
             print("first if condition")
 
         # Update parameters using the current Jacobian and search direction
-        parameters = update_parameters_with_jacobian(parameters,structure_cache, s)
+        parameters = update_parameters_with_jacobian(parameters0,structure_cache, s)
 
         # Break the loop if the update is smaller than epsilon to prevent infinite loops
         if -E_prime0 < epsilon:
@@ -68,18 +69,23 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                 print("Stopping criteria met, exiting the algorithm")
                 return
             AL, caches = Model_forward(x_train_flattened, parameters)
+            # Compute cost
             E = compute_cost(AL, one_hot_encoded_y_train.T)
 
         while True:
             print("while loop 3")
-            # compute k and E_prime
+            # Update parameters using the current Jacobian and search direction
+            parameters = update_parameters_with_jacobian(parameters, structure_cache, s)
+            AL, caches = Model_forward(x_train_flattened, parameters)
+            # Compute cost
             E = compute_cost(AL, one_hot_encoded_y_train.T)
             k = np.dot(J.T, s)
             E_prime = np.dot(k.T, s)
-
-            # Compute b0 and m
-            b0 = E_prime - E_prime0 # E_prime0 is the E_prime from the previous iteration
-            m = s + k0 - k # k0 is the k from the previous iteration
+            b0 = E_prime - E_prime0
+            m = s + k0 - k
+            parameters0 = parameters
+            E0 = E
+            k0 = k
             E_prime0 = E_prime
 
             if b0 >= epsilon:
@@ -151,8 +157,6 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                     J = J +  J * qpT
                     # save cost and parameters for next iteration
                     J = parameters['J']
-                    E0 = E
-                    #print("cost: ", E0)
 
                     if n_squared > 0:
                         break
@@ -161,9 +165,9 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                         break
             else:
                 print("else statement 1")
-                S = lambda_factor * s
+                s = lambda_factor * s
                 E_prime0 = lambda_factor* E_prime0
-                continue
+                continue # go back to the beginning of while loop 2
 
     return parameters
 
@@ -203,12 +207,13 @@ if __name__ == '__main__':
     AL, caches = Model_forward(x_train_flattened, parameters)
 
     # Compute the cost
+    print("this is the initial cost computed")
     cost = compute_cost(AL, one_hot_encoded_y_train.T)
 
     # Compute the gradients
     grads = Model_backward(AL, one_hot_encoded_y_train.T, caches)
 
-    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=5)
+    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=30)
 
     # Get predictions for the training and test sets
     #predictions_train = predict(x_train_flattened, parameters)
