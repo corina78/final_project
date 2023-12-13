@@ -55,11 +55,11 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         if iteration_counter == 1:
             if -E_prime0 < epsilon:
                 print("Stopping criteria met, exiting the algorithm")
-                return
+                return parameters
         else:
             if E_prime0 < epsilon:
                 print("Stopping criteria met, exiting the algorithm")
-                return
+                return parameters
         # Calculate a new forward pass and then the cost
         AL, caches = Model_forward(x_train_flattened, parameters)
         # Compute the cost
@@ -74,7 +74,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
             parameters = update_parameters_with_jacobian(parameters, structure_cache,s)
             if -E_prime0 < epsilon:
                 print("Stopping criteria met, exiting the algorithm")
-                return
+                return parameters
             AL, caches = Model_forward(x_train_flattened, parameters)
             # Compute cost
             E = compute_cost(AL, one_hot_encoded_y_train.T)
@@ -101,7 +101,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                 # Check if the norm of m is sufficiently small
                 if (np.linalg.norm(m) ** 2 < epsilon):
                     print("Convergence criteria met, exit")
-                    return
+                    return parameters
                 else:
                     v = np.dot(m.T, s)
                     mu = v - m_square
