@@ -3,8 +3,9 @@ import copy
 from memory_profiler import profile
 #from scipy.sparse import identity
 import time
+import pickle
 @profile
-def initialize_parameters(units_in_layer, dtype=np.float16):
+def initialize_parameters_davidon(units_in_layer, dtype=np.float16):
     """
     Initializes network parameters using He initialization, and prepares for Davidson's algorithm
 
@@ -44,6 +45,38 @@ def initialize_parameters(units_in_layer, dtype=np.float16):
     print("J shape: " + str(parameters['J'].shape))
 
     return parameters
+
+def initialize_parameters(units_in_layer, dtype=np.float16):
+    """
+    Initializes network parameters using He initialization, and prepares for Davidson's algorithm
+
+    Args:
+    units_in_layer -- python list containing the dimensions of each layer in the network
+
+    Returns:
+    parameters -- dictionary containing:
+                  Wl, bl -- weight matrix and bias vector for layer l
+                  J -- Initial Jacobian or Hessian approximation
+    """
+
+    np.random.seed(45)
+    parameters = {}
+    L = len(units_in_layer)  # number of layers in the network
+
+    total_params = 0  # To calculate the total number of parameters
+    start = time.time()
+    for l in range(1, L):
+        parameters['W' + str(l)] = np.random.randn(units_in_layer[l], units_in_layer[l - 1]) * np.sqrt(2. / units_in_layer[l - 1]).astype(dtype)
+        parameters['b' + str(l)] = np.zeros((units_in_layer[l], 1), dtype=dtype)
+
+        print("W" + str(l) + " shape: " + str(parameters['W' + str(l)].shape))
+        print("b" + str(l) + " shape: " + str(parameters['b' + str(l)].shape))
+
+    end = time.time()
+    elapsed = end - start
+    print("Elapsed time for initialization of w and b: ", elapsed)
+    return parameters
+
 
 def relu(Z):
     """
@@ -358,8 +391,6 @@ def flatten_gradients_for_jacobian(grads, units_in_layer):
 
 import numpy as np
 
-import numpy as np
-
 def update_parameters_with_jacobian(params, structure_cache, s):
     """
     Update parameters using a modification of gradient descent that incorporates
@@ -401,8 +432,10 @@ def update_parameters_with_jacobian(params, structure_cache, s):
         # Slice the corresponding segment from update_direction
         segment = update_direction[start:start + size]
 
+        segment_reshape = segment.reshape(shape)
+
         # Reshape and update the parameter in the dictionary
-        params[param_key] += segment.reshape(shape)
+        params[param_key] += segment_reshape
 
         # Update the start index for the next parameter
         start += size
@@ -473,5 +506,7 @@ def compute_accuracy(predictions, Y):
     accuracy = np.mean(predictions == Y)
     return accuracy
 
-
+def load_pickle(object):
+    with open(object, 'rb') as handle:
+        return pickle.load(handle)
 

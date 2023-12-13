@@ -35,8 +35,8 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         if iteration_counter >= max_iterations:
             print("Maximum number of iterations reached, exiting the algorithm")
             return
-
-        s = -k0
+        if iteration_counter == 0:
+            s = -k0
         E_prime0 = np.dot(k0.T,s)
         lambda_factor = 2
 
@@ -61,7 +61,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         # Check if the update is sufficient, otherwise adjust
         while E > E0:
             print("while loop 2")
-            s = s/2
+            s = s*2
             E_prime0 = E_prime0/2
             lambda_factor = 1/2
             parameters = update_parameters_with_jacobian(parameters, structure_cache,s)
@@ -189,10 +189,10 @@ if __name__ == '__main__':
                                                                                            y_test)
 
     # take a sample:
-    x_train_flattened = x_train_flattened[:, :64]
+    """x_train_flattened = x_train_flattened[:, :64]
     y_train_flattened = y_train_flattened[:, :64]
     x_test_flattened = x_test_flattened[:, :64]
-    y_test_flattened = y_test_flattened[:, :64]
+    y_test_flattened = y_test_flattened[:, :64]"""
 
     # One hot encode Y ground true values
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
@@ -201,7 +201,7 @@ if __name__ == '__main__':
     units_in_layer = [784, 5, 5, 10]
 
     # Initialize the parameters
-    parameters = initialize_parameters(units_in_layer)
+    parameters = initialize_parameters_davidon(units_in_layer)
 
     # First forward pass of the neural network
     AL, caches = Model_forward(x_train_flattened, parameters)

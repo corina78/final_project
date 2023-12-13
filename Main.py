@@ -44,6 +44,8 @@ def Model(X, Y, layers_dims, learning_rate=0.01, num_iterations=1):
         # Backward propagation.
         print("Starting backward propagation...")
         grads = Model_backward(AL, Y, caches)
+        with open('grads.pickle', 'wb') as handle:
+            pickle.dump(grads, handle, protocol=pickle.HIGHEST_PROTOCOL)
         print("Backward propagation done!")
 
         # Update parameters.
@@ -115,7 +117,7 @@ if __name__=="__main__":
     # Define the number of units in each layer of the network
     units_in_layer = [784, 256, 128, 10]
 
-    parameters, costs = Model(x_train_flattened, one_hot_encoded_y_train.T, units_in_layer,learning_rate=0.01, num_iterations=50)
+    parameters, costs = Model(x_train_flattened, one_hot_encoded_y_train.T, units_in_layer,learning_rate=0.01, num_iterations=1)
 
     predictions_train = predict(x_train_flattened, parameters)
     predictions_test = predict(x_test_flattened, parameters)
