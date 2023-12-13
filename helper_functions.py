@@ -435,7 +435,7 @@ def update_parameters_with_jacobian(params, structure_cache, s):
         segment_reshape = segment.reshape(shape)
 
         # Reshape and update the parameter in the dictionary
-        params[param_key] += segment_reshape
+        params[param_key] += 0.01*segment_reshape
 
         # Update the start index for the next parameter
         start += size

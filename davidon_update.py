@@ -8,7 +8,7 @@ from memory_profiler import profile
 import time
 
 @profile
-def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.1, max_iterations=10):
+def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.01,max_iterations=10):
 
     # Initialize variables only once
     parameters0 = parameters
@@ -34,9 +34,12 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
 
         if iteration_counter >= max_iterations:
             print("Maximum number of iterations reached, exiting the algorithm")
-            return
-        if iteration_counter == 0:
+            return parameters
+        if iteration_counter == 1:
             s = -k0
+        else:
+            s = k0
+
         E_prime0 = np.dot(k0.T,s)
         lambda_factor = 2
 
@@ -49,10 +52,14 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         parameters = update_parameters_with_jacobian(parameters0,structure_cache, s)
 
         # Break the loop if the update is smaller than epsilon to prevent infinite loops
-        if -E_prime0 < epsilon:
-            print("Stopping criteria met, exiting the algorithm")
-            return
-
+        if iteration_counter == 1:
+            if -E_prime0 < epsilon:
+                print("Stopping criteria met, exiting the algorithm")
+                return
+        else:
+            if E_prime0 < epsilon:
+                print("Stopping criteria met, exiting the algorithm")
+                return
         # Calculate a new forward pass and then the cost
         AL, caches = Model_forward(x_train_flattened, parameters)
         # Compute the cost
@@ -61,7 +68,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
         # Check if the update is sufficient, otherwise adjust
         while E > E0:
             print("while loop 2")
-            s = s*2
+            s = s/2
             E_prime0 = E_prime0/2
             lambda_factor = 1/2
             parameters = update_parameters_with_jacobian(parameters, structure_cache,s)
@@ -122,13 +129,14 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
                             d = c/a if a!=0 else None
 
                             if c < a:
+                                delta = np.sqrt(v / mu)
                                 gamma = -gamma
                                 alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
                             else:
                                 alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
                         else:
                             gamma = 0
-                            delta = np.sqrt(v/mu)
+                            delta = 0
                             alpha, p, q, omega = calculate_alpha_p_q_omega(v, mu, m, n, gamma, delta)
                     else:
                         n = s - (v * m)/m_square
@@ -213,15 +221,15 @@ if __name__ == '__main__':
     # Compute the gradients
     grads = Model_backward(AL, one_hot_encoded_y_train.T, caches)
 
-    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=30)
+    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=100)
 
     # Get predictions for the training and test sets
-    #predictions_train = predict(x_train_flattened, parameters)
-    #predictions_test = predict(x_test_flattened, parameters)
+    predictions_train = predict(x_train_flattened, parameters)
+    predictions_test = predict(x_test_flattened, parameters)
 
     # Compute the accuracy of the predictions
-    #accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
-    #accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
+    accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
+    accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
 
-    #print(f"Accuracy on the training set: {accuracy_train}")
-    #print(f"Accuracy on the test set: {accuracy_test}")
+    print(f"Accuracy on the training set: {accuracy_train}")
+    print(f"Accuracy on the test set: {accuracy_test}")
