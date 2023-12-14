@@ -8,7 +8,7 @@ from memory_profiler import profile
 import time
 
 @profile
-def davidson_quasi_newton_update(x_train_flattened, parameters, E, cost_list, k, units_in_layer, epsilon=0.001, max_iterations=10):
+def davidson_quasi_newton_update(x_train_flattened, x_test_flattened, parameters, E, cost_list, cost_list_test, k, units_in_layer, epsilon=0.001, max_iterations=10):
 
     # Initialize variables only once
 
@@ -35,7 +35,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, cost_list, k,
 
         if iteration_counter >= max_iterations:
             print("Maximum number of iterations reached, exiting the algorithm")
-            return parameters, cost_list
+            return parameters, cost_list, cost_list_test
         if iteration_counter == 1:
             s = -k0
         else:
@@ -57,16 +57,19 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, cost_list, k,
         if iteration_counter == 1:
             if -E_prime0 < epsilon:
                 print("Stopping criteria met, exiting the algorithm")
-                return parameters, cost_list
+                return parameters, cost_list, cost_list_test
         else:
             if E_prime0 < epsilon:
                 print("Stopping criteria met, exiting the algorithm")
-                return parameters, cost_list
+                return parameters, cost_list, cost_list_test
         # Calculate a new forward pass and then the cost
         AL, caches = Model_forward(x_train_flattened, parameters)
+        AL_test, caches_test = Model_forward(x_test_flattened, parameters)
         # Compute the cost
         E = compute_cost(AL, one_hot_encoded_y_train.T) # new cost with new parameters after first update
+        E_test = compute_cost(AL_test, one_hot_encoded_y_test.T)
         cost_list.append(E)
+        cost_list_test.append(E_test)
         # Check if the update is sufficient, otherwise adjust
         while E > E0:
             print("while loop 2")
@@ -76,19 +79,24 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, cost_list, k,
             parameters = update_parameters_with_jacobian(parameters, structure_cache,s)
             if -E_prime0 < epsilon:
                 print("Stopping criteria met, exiting the algorithm")
-                return parameters, cost_list
+                return parameters, cost_list, cost_list_test
             AL, caches = Model_forward(x_train_flattened, parameters)
+            AL_test, caches_test = Model_forward(x_test_flattened, parameters)
             # Compute cost
             E = compute_cost(AL, one_hot_encoded_y_train.T)
+            E_test = compute_cost(AL_test, one_hot_encoded_y_test.T)
             cost_list.append(E)
+            cost_list.append(E_test)
 
         while True:
             print("while loop 3")
             # Update parameters using the current Jacobian and search direction
             parameters = update_parameters_with_jacobian(parameters, structure_cache, s)
             AL, caches = Model_forward(x_train_flattened, parameters)
+            AL_test, caches_test = Model_forward(x_test_flattened, parameters)
             # Compute cost
             E = compute_cost(AL, one_hot_encoded_y_train.T)
+            E_test = compute_cost(AL_test, one_hot_encoded_y_test.T)
             cost_list.append(E)
             k = np.dot(J.T, s)
             E_prime = np.dot(k.T, s)
@@ -105,7 +113,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, cost_list, k,
                 # Check if the norm of m is sufficiently small
                 if (np.linalg.norm(m) ** 2 < epsilon):
                     print("Convergence criteria met, exit")
-                    return parameters, cost_list
+                    return parameters, cost_list, cost_list_test
                 else:
                     v = np.dot(m.T, s)
                     mu = v - m_square
@@ -182,7 +190,7 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, cost_list, k,
                 continue # go back to the beginning of while loop 2
 
 
-    return parameters, cost_list
+    return parameters, cost_list, cost_list_test
 
 if __name__ == '__main__':
 
@@ -209,6 +217,7 @@ if __name__ == '__main__':
 
     # One hot encode Y ground true values
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
+    one_hot_encoded_y_test = one_hot_encode(y_test_flattened)
 
     # Define the number of units in each layer of the network
     units_in_layer = [784, 5, 5, 10]
@@ -219,19 +228,30 @@ if __name__ == '__main__':
     # First forward pass of the neural network
     AL, caches = Model_forward(x_train_flattened, parameters)
 
-    cost_list = []
+    cost_list_test = []
+    AL_test, caches_test = Model_forward(x_test_flattened, parameters)
+    cost = compute_cost(AL_test, one_hot_encoded_y_test.T)
+    cost_list_test.append(cost)
+
     # Compute the cost
     print("this is the initial cost computed")
+    cost_list = []
     cost = compute_cost(AL, one_hot_encoded_y_train.T)
     cost_list.append(cost)
     # Compute the gradients
     grads = Model_backward(AL, one_hot_encoded_y_train.T, caches)
 
-    parameters, cost_list = davidson_quasi_newton_update(x_train_flattened, parameters, cost, cost_list, grads, units_in_layer, epsilon=0, max_iterations=100)
+    parameters, cost_list, cost_list_test = davidson_quasi_newton_update(x_train_flattened, x_test_flattened, parameters, cost, cost_list, cost_list_test, grads, units_in_layer, epsilon=0, max_iterations=100)
+
+    # Structure of the data to save: (parameters, cost_list, cost_list_test)
+    Data_to_save ={
+        'cost_list': cost_list,
+        'cost_list_test': cost_list_test
+    }
 
     # Save the parameters in a pickle file
     with open('cost_list_' + str(units_in_layer) + '.pickle', 'wb') as file:
-        pickle.dump(cost_list, file)
+        pickle.dump(Data_to_save, file)
 
     # Get predictions for the training and test sets
     predictions_train = predict(x_train_flattened, parameters)
