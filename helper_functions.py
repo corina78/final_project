@@ -1,6 +1,10 @@
 import numpy as np
 import copy
+
 from scipy.sparse import eye
+from memory_profiler import profile
+#from scipy.sparse import identity
+@profile
 
 def initialize_parameters(units_in_layer, dtype=np.float16):
     """

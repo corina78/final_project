@@ -4,9 +4,10 @@ import pickle
 from loader import MnistDataloader
 from preprocessing import prepare_data, one_hot_encode
 from helper_functions import *
+from memory_profiler import profile
 
-
-def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001, max_iterations=300):
+@profile
+def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_layer, epsilon=0.001, max_iterations=10):
 
     # Initialize variables only once
     J = parameters['J'] # initial parameters
@@ -170,7 +171,14 @@ if __name__ == '__main__':
 
     # Preprocess datasets
     x_train_flattened, x_test_flattened, y_train_flattened, y_test_flattened = prepare_data(x_train, y_train, x_test,
-                                                                                            y_test)
+                                                                                           y_test)
+
+    # take a sample:
+    x_train_flattened = x_train_flattened[:, :64]
+    y_train_flattened = y_train_flattened[:, :64]
+    x_test_flattened = x_test_flattened[:, :64]
+    y_test_flattened = y_test_flattened[:, :64]
+
     # One hot encode Y ground true values
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
 
@@ -191,13 +199,16 @@ if __name__ == '__main__':
 
     parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0.01, max_iterations=100)
 
+
     # Get predictions for the training and test sets
-    predictions_train = predict(x_train_flattened, parameters)
-    predictions_test = predict(x_test_flattened, parameters)
+    #predictions_train = predict(x_train_flattened, parameters)
+    #predictions_test = predict(x_test_flattened, parameters)
 
     # Compute the accuracy of the predictions
-    accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
-    accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
+    #accuracy_train = compute_accuracy(predictions_train, y_train_flattened)
+    #accuracy_test = compute_accuracy(predictions_test, y_test_flattened)
 
     print(f"Accuracy on the training set: {accuracy_train}")
     print(f"Accuracy on the test set: {accuracy_test}")
+
+
