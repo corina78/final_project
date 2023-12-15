@@ -158,11 +158,11 @@ def davidson_quasi_newton_update(x_train_flattened, parameters, E, k, units_in_l
 if __name__ == '__main__':
 
     # Input data:
-    input_path = '/home/corina/Documents/Math_Machine_Learning/minst'
-    training_images_filepath = join(input_path, 'train-images-idx3-ubyte/train-images-idx3-ubyte')
-    training_labels_filepath = join(input_path, 'train-labels-idx1-ubyte/train-labels-idx1-ubyte')
-    test_images_filepath = join(input_path, 't10k-images-idx3-ubyte/t10k-images-idx3-ubyte')
-    test_labels_filepath = join(input_path, 't10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte')
+    input_path = '/home/corina_rios/minst'
+    training_images_filepath = join(input_path, 'train-images-idx3-ubyte')
+    training_labels_filepath = join(input_path, 'train-labels-idx1-ubyte')
+    test_images_filepath = join(input_path, 't10k-images-idx3-ubyte')
+    test_labels_filepath = join(input_path, 't10k-labels-idx1-ubyte')
 
     mnist_dataloader = MnistDataloader(training_images_filepath, training_labels_filepath, test_images_filepath,
                                        test_labels_filepath)
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     one_hot_encoded_y_train = one_hot_encode(y_train_flattened)
 
     # Define the number of units in each layer of the network
-    units_in_layer = [784, 5, 5, 10]
+    units_in_layer = [784, 256, 128, 10]
 
     # Initialize the parameters
     parameters = initialize_parameters(units_in_layer)
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     # Compute the gradients
     grads = Model_backward(AL, one_hot_encoded_y_train.T, caches)
 
-    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0, max_iterations=20)
+    parameters = davidson_quasi_newton_update(x_train_flattened, parameters, cost, grads, units_in_layer, epsilon=0.01, max_iterations=100)
 
     # Get predictions for the training and test sets
     predictions_train = predict(x_train_flattened, parameters)
