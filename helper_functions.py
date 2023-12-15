@@ -1,11 +1,8 @@
 import numpy as np
 import copy
-
-from scipy.sparse import eye
 from memory_profiler import profile
 #from scipy.sparse import identity
 @profile
-
 def initialize_parameters(units_in_layer, dtype=np.float16):
     """
     Initializes network parameters using He initialization, and prepares for Davidson's algorithm
@@ -36,7 +33,7 @@ def initialize_parameters(units_in_layer, dtype=np.float16):
 
     # Initialize the Jacobian/Hessian approximation
     # For simplicity, starting with an identity matrix
-    parameters['J'] = eye(total_params, format="csr", dtype=dtype)
+    parameters['J'] = np.identity(total_params, dtype=dtype)
 
     print("J shape: " + str(parameters['J'].shape))
 
@@ -354,33 +351,41 @@ def flatten_gradients_for_jacobian(grads, units_in_layer):
     return np.concatenate(flattened_gradient), structure_cache, size
 
 import numpy as np
-def update_parameters_with_jacobian(params, s, structure_cache):
+
+import numpy as np
+
+def update_parameters_with_jacobian(params, structure_cache, s):
+    """
+    Update parameters using a modification of gradient descent that incorporates
+    a Jacobian matrix.
+
+    Arguments:
+    params -- python dictionary containing learned parameters
+    structure_cache -- list containing the structure (shape and key) of each gradient
+    s -- search direction (flattened vector)
+    J -- numpy array representing the Jacobian matrix, it is within the parameters dictionary
+
+    Returns:
+    params -- python dictionary containing updated parameters
+    """
+
     # Calculate the update direction using the Jacobian
     J = params["J"]
-
-    # Check the type and shape of s
-    print("Type of s:", type(s))
-    print("Shape of s:", s.shape)
-
-    # Perform the dot product
-    try:
-        update_direction = J.dot(s).ravel()
-    except ValueError as e:
-        print("Error in dot product:", e)
-        # Additional debugging information
-        print("Shape of J:", J.shape)
-        raise
+    update_direction = np.dot(J, s)
 
     # Initialize the starting index for slicing update_direction
     start = 0
 
     # Iterate over the structure_cache to update each parameter
     for grad_key, shape in structure_cache:
-        param_key = grad_key[1:]  # Convert gradient key to parameter key
+        # Convert gradient key to parameter key (e.g., 'dW1' to 'W1')
+        param_key = grad_key[1:]  # Remove the 'd' from the gradient key
 
+        # Ensure the key exists in the params dictionary
         if param_key not in params:
             raise KeyError(f"Parameter {param_key} not found in params dictionary.")
 
+        # Calculate the size of the current parameter
         size = np.prod(shape)
 
         # Slice the corresponding segment from update_direction
@@ -389,6 +394,7 @@ def update_parameters_with_jacobian(params, s, structure_cache):
         # Reshape and update the parameter in the dictionary
         params[param_key] += segment.reshape(shape)
 
+        # Update the start index for the next parameter
         start += size
 
     return params
